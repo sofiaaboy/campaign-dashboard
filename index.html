@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Campaign Monitor Panels</title>
+  <style>
+    body {
+      margin: 0;
+      background: #0a0a0f;
+      color: #e5e5ea;
+      font-family: monospace;
+    }
+
+    .header {
+      padding: 20px;
+      border-bottom: 1px solid #1c1c1e;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .header-title {
+      font-size: 14px;
+      line-height: 1.3;
+    }
+
+    .filters {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      border: 1px solid #2c2c2e;
+      background: #0d0d14;
+      color: #e5e5ea;
+      padding: 8px 10px;
+      font-family: monospace;
+      font-size: 11px;
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+
+    .filter-btn:hover {
+      background: #1c1c1e;
+      border-color: #3a3a3c;
+    }
+
+    .filter-btn.active {
+      background: #1c1c1e;
+      border-color: #8e8e93;
+    }
+
+    .filter-btn.bad {
+      color: #ff2d55;
+    }
+
+    .filter-btn.warn {
+      color: #ffcc00;
+    }
+
+    .filter-btn.good {
+      color: #30d158;
+    }
+
+    .container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+      gap: 12px;
+      padding: 12px;
+    }
+
+    .card {
+      border: 1px solid #1c1c1e;
+      padding: 14px;
+      cursor: pointer;
+      background: #101017;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+
+    .card:hover {
+      background: #1c1c1e;
+      border-color: #2c2c2e;
+    }
+
+    .card.hidden-by-filter {
+      display: none;
+    }
+
+    .title {
+      font-size: 13px;
+      margin-bottom: 12px;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .kpi {
+      border: 1px solid #2c2c2e;
+      background: #0d0d14;
+      padding: 8px 10px;
+      min-width: 0;
+    }
+
+    .kpi-label {
+      display: block;
+      font-size: 10px;
+      color: #8e8e93;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      line-height: 1.2;
+    }
+
+    .kpi-value {
+      display: block;
+      font-size: 15px;
+      font-weight: 700;
+      color: #e5e5ea;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .kpi-value.status-text {
+      font-size: 14px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .bad {
+      color: #ff2d55;
+    }
+
+    .warn {
+      color: #ffcc00;
+    }
+
+    .good {
+      color: #30d158;
+    }
+
+    .muted {
+      color: #8e8e93;
+    }
+
+    .trend-label {
+      font-size: 10px;
+      color: #8e8e93;
+      margin: 10px 0 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .spark {
+      width: 100%;
+      height: 44px;
+      margin: 0 0 6px;
+      display: block;
+    }
+
+    .spark-values {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .spark-value {
+      text-align: center;
+      font-size: 10px;
+      line-height: 1.3;
+    }
+
+    .spark-week {
+      color: #8e8e93;
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    .spark-cr {
+      color: #e5e5ea;
+      font-weight: 700;
+      display: block;
+    }
+
+    .summary-bar {
+      border: 1px solid #2c2c2e;
+      padding: 12px;
+      background: #0d0d14;
+      margin-top: 8px;
+    }
+
+    .summary-title {
+      font-size: 10px;
+      color: #8e8e93;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .summary-metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      align-items: start;
+    }
+
+    .summary-metric {
+      min-width: 0;
+    }
+
+    .summary-label {
+      display: block;
+      color: #8e8e93;
+      font-size: 10px;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      line-height: 1.2;
+    }
+
+    .summary-main {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      flex-wrap: wrap;
+      min-width: 0;
+    }
+
+    .summary-value {
+      color: #e5e5ea;
+      font-weight: 700;
+      font-size: 12px;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+
+    .summary-delta {
+      font-weight: 700;
+      font-size: 10px;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+
+    .table {
+      width: 100%;
+      font-size: 10px;
+      margin-top: 8px;
+      border-collapse: collapse;
+    }
+
+    .table td,
+    .table th {
+      text-align: center;
+      padding: 4px;
+      border-bottom: 1px solid #1c1c1e;
+    }
+
+    .section-title {
+      margin-top: 12px;
+      font-size: 11px;
+    }
+
+    @media (max-width: 740px) {
+      .header {
+        flex-direction: column;
+        align-items: stretch;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
+
+      .kpi-grid,
+      .summary-metrics,
+      .spark-values {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-title">Opratel Monitor · Google Ads Panel </div>
+    <div id="filters" class="filters"></div>
+  </div>
+
+  <div id="content" class="container"></div>
+
+  <script>
+    const URL =
+      "https://docs.google.com/spreadsheets/d/e/2PACX-1vRSbKK6im6HkwReMILOcIs8A9SiXLtL6qyN9tVzP4rXY0hD2-FomB2lhV8JKzThFF4n2Tz2EX5RDSVd/pub?gid=67001666&single=true&output=csv";
+
+    const norm = (h) => h.toLowerCase().replace(/\s+/g, "");
+    const num = (v) => parseFloat((v || "0").replace(/,/g, "")) || 0;
+
+    let activeFilter = "all";
+
+    function parseCSV(csv) {
+      const rows = csv.trim().split("\n");
+      const headers = rows[0]
+        .split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/)
+        .map((h) => norm(h.replace(/"/g, "")));
+
+      return rows.slice(1).map((r) => {
+        const vals = r.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+        const o = {};
+        headers.forEach((h, i) => {
+          o[h] = vals[i]?.replace(/"/g, "").trim() || "";
+        });
+        return o;
+      });
+    }
+
+    function avg(arr) {
+      return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
+    }
+
+    function summarizePeriod(rows) {
+      const clicks = rows.reduce((a, r) => a + r.clicks, 0);
+      const conv = rows.reduce((a, r) => a + r.conv, 0);
+      const cost = rows.reduce((a, r) => a + r.cost, 0);
+
+      return {
+        clicks,
+        conv,
+        cost,
+        cr: clicks ? conv / clicks : 0,
+        cpa: conv ? cost / conv : 0,
+      };
+    }
+
+    function groupWeeks(rows, dates) {
+      const weeks = [];
+
+      for (let i = 0; i < 4; i++) {
+        const start = Math.max(0, dates.length - 7 * (i + 1));
+        const end = dates.length - 7 * i;
+        const slice = dates.slice(start, end);
+
+        const w = rows.filter((r) => slice.includes(r.date));
+        const clicks = w.reduce((a, r) => a + r.clicks, 0);
+        const conv = w.reduce((a, r) => a + r.conv, 0);
+        const cost = w.reduce((a, r) => a + r.cost, 0);
+
+        weeks.unshift({
+          label: `W${4 - i}`,
+          clicks,
+          conv,
+          cost,
+          cr: clicks ? conv / clicks : 0,
+          cpa: conv ? cost / conv : 0,
+        });
+      }
+
+      return weeks;
+    }
+
+    function trendScore(weeks) {
+      let s = 0;
+
+      for (let i = 1; i < weeks.length; i++) {
+        const curr = weeks[i];
+        const prev = weeks[i - 1];
+
+        if (prev.cr > 0) {
+          if (curr.cr < prev.cr * 0.85) s += 2;
+          else if (curr.cr < prev.cr * 0.95) s += 1;
+          else if (curr.cr > prev.cr * 1.15) s -= 1;
+        }
+
+        if (prev.cpa > 0 && curr.conv > 0 && prev.conv > 0) {
+          if (curr.cpa > prev.cpa * 1.15) s += 2;
+          else if (curr.cpa > prev.cpa * 1.05) s += 1;
+          else if (curr.cpa < prev.cpa * 0.85) s -= 1;
+        }
+      }
+
+      return s;
+    }
+
+    function levelScore(weeks) {
+      const last = weeks[weeks.length - 1];
+      const avgCR = avg(weeks.map((w) => w.cr));
+      const cpaWeeks = weeks.filter((w) => w.conv > 0 && w.cpa > 0);
+      const avgCPA = avg(cpaWeeks.map((w) => w.cpa));
+
+      let s = 0;
+
+      if (avgCR > 0) {
+        if (last.cr < avgCR * 0.85) s += 2;
+        else if (last.cr < avgCR * 0.95) s += 1;
+      }
+
+      if (avgCPA > 0 && last.conv > 0 && last.cpa > 0) {
+        if (last.cpa > avgCPA * 1.15) s += 2;
+        else if (last.cpa > avgCPA * 1.05) s += 1;
+      }
+
+      return s;
+    }
+
+    function volumeWeight(weeks) {
+      const last = weeks[weeks.length - 1];
+
+      if (last.conv >= 50) return 1.5;
+      if (last.conv >= 20) return 1.2;
+      if (last.conv >= 5) return 1.0;
+      return 0.7;
+    }
+
+    function scoreCampaign(weeks) {
+      const trend = trendScore(weeks);
+      const level = levelScore(weeks);
+      const weight = volumeWeight(weeks);
+      return Math.max(0, Math.round((trend + level) * weight));
+    }
+
+    function classifyScore(score) {
+      if (score >= 6) return { label: "Critical", className: "bad", key: "critical" };
+      if (score >= 3) return { label: "Watch", className: "warn", key: "watch" };
+      return { label: "Healthy", className: "good", key: "healthy" };
+    }
+
+    function getStatusColor(className) {
+      if (className === "bad") return "#ff2d55";
+      if (className === "warn") return "#ffcc00";
+      return "#30d158";
+    }
+
+    function pctChange(curr, prev) {
+      if (!prev || prev === 0) return null;
+      return ((curr - prev) / prev) * 100;
+    }
+
+    function formatDelta(curr, prev) {
+      const change = pctChange(curr, prev);
+      if (change === null) return "—";
+      const sign = change > 0 ? "+" : "";
+      return `${sign}${change.toFixed(1)}%`;
+    }
+
+    function deltaClass(metric, curr, prev) {
+      const change = pctChange(curr, prev);
+      if (change === null) return "muted";
+
+      if (metric === "conv" || metric === "cr") {
+        if (change > 0) return "good";
+        if (change < 0) return "bad";
+        return "muted";
+      }
+
+      if (metric === "cpa") {
+        if (change < 0) return "good";
+        if (change > 0) return "bad";
+        return "muted";
+      }
+
+      return "muted";
+    }
+
+    function getAlert(curr, prev) {
+      if (!prev) return { t: "-", c: "muted" };
+
+      const alerts = [];
+
+      if (prev.cr > 0) {
+        if (curr.cr < prev.cr * 0.85) alerts.push("CR↓↓");
+        else if (curr.cr < prev.cr * 0.95) alerts.push("CR↓");
+        else if (curr.cr > prev.cr * 1.15) alerts.push("CR↑");
+      }
+
+      if (prev.cpa > 0 && curr.conv > 0 && prev.conv > 0) {
+        if (curr.cpa > prev.cpa * 1.15) alerts.push("CPA↑↑");
+        else if (curr.cpa > prev.cpa * 1.05) alerts.push("CPA↑");
+        else if (curr.cpa < prev.cpa * 0.85) alerts.push("CPA↓");
+      }
+
+      let c = "muted";
+
+      if (alerts.some((a) => a.includes("↓↓") || a.includes("↑↑"))) c = "bad";
+      else if (alerts.some((a) => a.includes("↓") || a.includes("↑"))) c = "warn";
+
+      if (alerts.includes("CR↑") && alerts.includes("CPA↓")) c = "good";
+
+      return {
+        t: alerts.length ? alerts.join(" ") : "OK",
+        c,
+      };
+    }
+
+    function sparkline(weeks, color) {
+      if (!weeks.length) return "";
+
+      const values = weeks.map((w) => w.cr);
+      const max = Math.max(...values);
+      const min = Math.min(...values);
+
+      const points = weeks.map((w, i) => {
+        const x = weeks.length === 1 ? 50 : (i / (weeks.length - 1)) * 100;
+        const y = 44 - ((w.cr - min) / (max - min || 1)) * 44;
+        return { x, y };
+      });
+
+      const polylinePoints = points.map((p) => `${p.x},${p.y}`).join(" ");
+
+      return `
+        <svg class="spark" viewBox="0 0 100 44" preserveAspectRatio="none">
+          <polyline
+            fill="none"
+            stroke="${color}"
+            stroke-width="2"
+            points="${polylinePoints}"
+          />
+        </svg>
+      `;
+    }
+
+    function sparkValues(weeks) {
+      return `
+        <div class="spark-values">
+          ${weeks.map((w) => `
+            <div class="spark-value">
+              <span class="spark-week">${w.label}</span>
+              <span class="spark-cr">${(w.cr * 100).toFixed(2)}%</span>
+            </div>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    function toggle(id) {
+      const el = document.getElementById(id);
+      if (el) el.classList.toggle("hidden");
+    }
+
+    function safeId(str) {
+      return str.replace(/[^a-zA-Z0-9_-]/g, "_");
+    }
+
+    function setFilter(filterKey) {
+      activeFilter = filterKey;
+
+      document.querySelectorAll(".filter-btn").forEach((btn) => {
+        btn.classList.toggle("active", btn.getAttribute("data-filter") === filterKey);
+      });
+
+      const cards = document.querySelectorAll(".card");
+      cards.forEach((card) => {
+        const status = card.getAttribute("data-status");
+        const visible = filterKey === "all" || status === filterKey;
+        card.classList.toggle("hidden-by-filter", !visible);
+      });
+    }
+
+    function renderFilters(list) {
+      const counts = {
+        all: list.length,
+        critical: list.filter((x) => x.scoreMeta.key === "critical").length,
+        watch: list.filter((x) => x.scoreMeta.key === "watch").length,
+        healthy: list.filter((x) => x.scoreMeta.key === "healthy").length,
+      };
+
+      const filters = [
+        { key: "all", label: `All (${counts.all})`, className: "" },
+        { key: "critical", label: `Critical (${counts.critical})`, className: "bad" },
+        { key: "watch", label: `Watch (${counts.watch})`, className: "warn" },
+        { key: "healthy", label: `Healthy (${counts.healthy})`, className: "good" },
+      ];
+
+      document.getElementById("filters").innerHTML = filters.map((f) => `
+        <button
+          class="filter-btn ${f.className} ${activeFilter === f.key ? "active" : ""}"
+          data-filter="${f.key}"
+          onclick="event.stopPropagation(); setFilter('${f.key}')"
+        >
+          ${f.label}
+        </button>
+      `).join("");
+    }
+
+    async function init() {
+      const res = await fetch(URL);
+      const csv = await res.text();
+      const raw = parseCSV(csv);
+
+      const data = raw
+        .filter((r) => r.date && r.campaignname)
+        .map((r) => {
+          const clicks = num(r.clicks);
+          const conv = num(r.conversions);
+          const cost = num(r.cost);
+
+          return {
+            campaign: r.campaignname,
+            date: r.date,
+            clicks,
+            conv,
+            cost,
+            cr: clicks ? conv / clicks : 0,
+            cpa: conv ? cost / conv : 0,
+          };
+        });
+
+      const dates = [...new Set(data.map((r) => r.date))].sort(
+        (a, b) => new Date(a) - new Date(b)
+      );
+
+      const last28Dates = dates.slice(-28);
+      const last7Dates = dates.slice(-7);
+      const prev7Dates = dates.slice(-14, -7);
+      const yesterdayDate = dates[dates.length - 1];
+      const campaigns = [...new Set(data.map((r) => r.campaign))];
+
+      let list = campaigns.map((c) => {
+        const rows = data.filter((r) => r.campaign === c);
+        const weeks = groupWeeks(rows, last28Dates);
+        const score = scoreCampaign(weeks);
+        const scoreMeta = classifyScore(score);
+        const lineColor = getStatusColor(scoreMeta.className);
+
+        const daily = rows.filter((r) => last7Dates.includes(r.date));
+        const prevDaily = rows.filter((r) => prev7Dates.includes(r.date));
+        const yesterdayRows = rows.filter((r) => r.date === yesterdayDate);
+        const yesterday = summarizePeriod(yesterdayRows);
+
+        const last7 = summarizePeriod(daily);
+        const prev7 = summarizePeriod(prevDaily);
+
+        return {
+          c,
+          id: safeId(c),
+          weeks,
+          score,
+          scoreMeta,
+          lineColor,
+          daily,
+          prevDaily,
+          last7,
+          prev7,
+          yesterday,
+        };
+      });
+
+      list.sort((a, b) => b.score - a.score);
+
+      renderFilters(list);
+
+      let html = "";
+
+      list.forEach((x) => {
+        html += `
+          <div class="card" data-status="${x.scoreMeta.key}" onclick="toggle('${x.id}')">
+            <div class="title">${x.c}</div>
+
+            <div class="kpi-grid">
+              <div class="kpi">
+                <span class="kpi-label">Score</span>
+                <span class="kpi-value ${x.scoreMeta.className}">${x.score}</span>
+              </div>
+
+              <div class="kpi">
+                <span class="kpi-label">Status</span>
+                <span class="kpi-value status-text ${x.scoreMeta.className}">${x.scoreMeta.label}</span>
+              </div>
+
+              <div class="kpi">
+                <span class="kpi-label">CR (ayer)</span>
+                <span class="kpi-value">${(x.yesterday.cr * 100).toFixed(2)}%</span>
+              </div>
+
+              <div class="kpi">
+                <span class="kpi-label">CPA (ayer)</span>
+                <span class="kpi-value">$${x.yesterday.cpa.toFixed(2)}</span>
+              </div>
+            </div>
+
+            <div class="trend-label">CR semanal · últimas 4 semanas</div>
+            ${sparkline(x.weeks, x.lineColor)}
+            ${sparkValues(x.weeks)}
+
+            <div class="summary-bar">
+              <div class="summary-title">Last 7 days vs previous 7 days</div>
+              <div class="summary-metrics">
+                <div class="summary-metric">
+                  <span class="summary-label">Conv</span>
+                  <div class="summary-main">
+                    <span class="summary-value">${x.last7.conv}</span>
+                    <span class="summary-delta ${deltaClass('conv', x.last7.conv, x.prev7.conv)}">
+                      (${formatDelta(x.last7.conv, x.prev7.conv)})
+                    </span>
+                  </div>
+                </div>
+
+                <div class="summary-metric">
+                  <span class="summary-label">Cost</span>
+                  <div class="summary-main">
+                    <span class="summary-value">$${x.last7.cost.toFixed(2)}</span>
+                    <span class="summary-delta muted">
+                      (${formatDelta(x.last7.cost, x.prev7.cost)})
+                    </span>
+                  </div>
+                </div>
+
+                <div class="summary-metric">
+                  <span class="summary-label">CR</span>
+                  <div class="summary-main">
+                    <span class="summary-value">${(x.last7.cr * 100).toFixed(2)}%</span>
+                    <span class="summary-delta ${deltaClass('cr', x.last7.cr, x.prev7.cr)}">
+                      (${formatDelta(x.last7.cr, x.prev7.cr)})
+                    </span>
+                  </div>
+                </div>
+
+                <div class="summary-metric">
+                  <span class="summary-label">CPA</span>
+                  <div class="summary-main">
+                    <span class="summary-value">$${x.last7.cpa.toFixed(2)}</span>
+                    <span class="summary-delta ${deltaClass('cpa', x.last7.cpa, x.prev7.cpa)}">
+                      (${formatDelta(x.last7.cpa, x.prev7.cpa)})
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div id="${x.id}" class="hidden">
+              <div class="section-title"><b>Weekly</b></div>
+              <table class="table">
+                <tr>
+                  <th>W</th>
+                  <th>CR</th>
+                  <th>CPA</th>
+                  <th>Conv</th>
+                  <th>Clicks</th>
+                  <th>Cost</th>
+                  <th>A</th>
+                </tr>
+        `;
+
+        x.weeks.forEach((w, i, arr) => {
+          const a = getAlert(w, arr[i - 1]);
+          html += `
+            <tr>
+              <td>${w.label}</td>
+              <td>${(w.cr * 100).toFixed(2)}%</td>
+              <td>$${w.cpa.toFixed(2)}</td>
+              <td>${w.conv}</td>
+              <td>${w.clicks}</td>
+              <td>$${w.cost.toFixed(2)}</td>
+              <td class="${a.c}">${a.t}</td>
+            </tr>
+          `;
+        });
+
+        html += `
+              </table>
+
+              <div class="section-title"><b>Last 7 Days</b></div>
+              <table class="table">
+                <tr>
+                  <th>D</th>
+                  <th>CR</th>
+                  <th>CPA</th>
+                  <th>Conv</th>
+                  <th>Clicks</th>
+                  <th>Cost</th>
+                </tr>
+        `;
+
+        x.daily.forEach((d) => {
+          html += `
+            <tr>
+              <td>${d.date}</td>
+              <td>${(d.cr * 100).toFixed(2)}%</td>
+              <td>$${d.cpa.toFixed(2)}</td>
+              <td>${d.conv}</td>
+              <td>${d.clicks}</td>
+              <td>$${d.cost.toFixed(2)}</td>
+            </tr>
+          `;
+        });
+
+        html += `
+              </table>
+            </div>
+          </div>
+        `;
+      });
+
+      document.getElementById("content").innerHTML = html;
+      setFilter(activeFilter);
+    }
+
+    init();
+  </script>
+</body>
+</html>
