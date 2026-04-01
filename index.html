@@ -21,15 +21,36 @@
       flex-wrap: wrap;
     }
 
+    .header-left {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
     .header-title {
       font-size: 14px;
       line-height: 1.3;
+    }
+
+    .last-updated {
+      font-size: 10px;
+      color: #8e8e93;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .header-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 8px;
     }
 
     .filters {
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
+      justify-content: flex-end;
     }
 
     .filter-btn {
@@ -70,6 +91,14 @@
       grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
       gap: 12px;
       padding: 12px;
+      opacity: 1;
+      transform: translateY(0);
+      transition: opacity 0.28s ease, transform 0.28s ease;
+    }
+
+    .container.is-refreshing {
+      opacity: 0.35;
+      transform: translateY(4px);
     }
 
     .card {
@@ -278,6 +307,14 @@
         flex-direction: column;
         align-items: stretch;
       }
+
+      .header-right {
+        align-items: flex-start;
+      }
+
+      .filters {
+        justify-content: flex-start;
+      }
     }
 
     @media (max-width: 560px) {
@@ -295,8 +332,14 @@
 </head>
 <body>
   <div class="header">
-    <div class="header-title">Opratel Monitor · Google Ads Panel </div>
-    <div id="filters" class="filters"></div>
+    <div class="header-left">
+      <div class="header-title">Campaign Monitor · Panel View</div>
+      <div id="lastUpdated" class="last-updated">Last updated (GMT-3): —</div>
+    </div>
+
+    <div class="header-right">
+      <div id="filters" class="filters"></div>
+    </div>
   </div>
 
   <div id="content" class="container"></div>
@@ -304,6 +347,9 @@
   <script>
     const URL =
       "https://docs.google.com/spreadsheets/d/e/2PACX-1vRSbKK6im6HkwReMILOcIs8A9SiXLtL6qyN9tVzP4rXY0hD2-FomB2lhV8JKzThFF4n2Tz2EX5RDSVd/pub?gid=67001666&single=true&output=csv";
+
+    const AUTO_REFRESH_MS = 3 * 60 * 60 * 1000; // 3 horas
+    const TIMEZONE_GMT3 = "America/Argentina/Buenos_Aires";
 
     const norm = (h) => h.toLowerCase().replace(/\s+/g, "");
     const num = (v) => parseFloat((v || "0").replace(/,/g, "")) || 0;
@@ -552,6 +598,20 @@
       return str.replace(/[^a-zA-Z0-9_-]/g, "_");
     }
 
+    function getExpandedIds() {
+      return Array.from(document.querySelectorAll('[id].hidden, [id]:not(.hidden)'))
+        .filter((el) => el.id && el.closest('.card'))
+        .filter((el) => !el.classList.contains('hidden'))
+        .map((el) => el.id);
+    }
+
+    function restoreExpandedIds(ids) {
+      ids.forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.classList.remove("hidden");
+      });
+    }
+
     function setFilter(filterKey) {
       activeFilter = filterKey;
 
@@ -559,8 +619,7 @@
         btn.classList.toggle("active", btn.getAttribute("data-filter") === filterKey);
       });
 
-      const cards = document.querySelectorAll(".card");
-      cards.forEach((card) => {
+      document.querySelectorAll(".card").forEach((card) => {
         const status = card.getAttribute("data-status");
         const visible = filterKey === "all" || status === filterKey;
         card.classList.toggle("hidden-by-filter", !visible);
@@ -593,8 +652,37 @@
       `).join("");
     }
 
-    async function init() {
-      const res = await fetch(URL);
+    function formatLastUpdatedGMT3(date = new Date()) {
+      const formatter = new Intl.DateTimeFormat("es-AR", {
+        timeZone: TIMEZONE_GMT3,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+      });
+
+      return formatter.format(date);
+    }
+
+    function updateLastUpdatedLabel() {
+      const el = document.getElementById("lastUpdated");
+      if (el) {
+        el.textContent = `Last updated (GMT-3): ${formatLastUpdatedGMT3()}`;
+      }
+    }
+
+    async function init(withAnimation = false) {
+      const contentEl = document.getElementById("content");
+      const expandedIds = getExpandedIds();
+
+      if (withAnimation && contentEl.children.length) {
+        contentEl.classList.add("is-refreshing");
+      }
+
+      const res = await fetch(URL, { cache: "no-store" });
       const csv = await res.text();
       const raw = parseCSV(csv);
 
@@ -750,24 +838,20 @@
                   <th>Cost</th>
                   <th>A</th>
                 </tr>
-        `;
-
-        x.weeks.forEach((w, i, arr) => {
-          const a = getAlert(w, arr[i - 1]);
-          html += `
-            <tr>
-              <td>${w.label}</td>
-              <td>${(w.cr * 100).toFixed(2)}%</td>
-              <td>$${w.cpa.toFixed(2)}</td>
-              <td>${w.conv}</td>
-              <td>${w.clicks}</td>
-              <td>$${w.cost.toFixed(2)}</td>
-              <td class="${a.c}">${a.t}</td>
-            </tr>
-          `;
-        });
-
-        html += `
+                ${x.weeks.map((w, i, arr) => {
+                  const a = getAlert(w, arr[i - 1]);
+                  return `
+                    <tr>
+                      <td>${w.label}</td>
+                      <td>${(w.cr * 100).toFixed(2)}%</td>
+                      <td>$${w.cpa.toFixed(2)}</td>
+                      <td>${w.conv}</td>
+                      <td>${w.clicks}</td>
+                      <td>$${w.cost.toFixed(2)}</td>
+                      <td class="${a.c}">${a.t}</td>
+                    </tr>
+                  `;
+                }).join("")}
               </table>
 
               <div class="section-title"><b>Last 7 Days</b></div>
@@ -780,33 +864,38 @@
                   <th>Clicks</th>
                   <th>Cost</th>
                 </tr>
-        `;
-
-        x.daily.forEach((d) => {
-          html += `
-            <tr>
-              <td>${d.date}</td>
-              <td>${(d.cr * 100).toFixed(2)}%</td>
-              <td>$${d.cpa.toFixed(2)}</td>
-              <td>${d.conv}</td>
-              <td>${d.clicks}</td>
-              <td>$${d.cost.toFixed(2)}</td>
-            </tr>
-          `;
-        });
-
-        html += `
+                ${x.daily.map((d) => `
+                  <tr>
+                    <td>${d.date}</td>
+                    <td>${(d.cr * 100).toFixed(2)}%</td>
+                    <td>$${d.cpa.toFixed(2)}</td>
+                    <td>${d.conv}</td>
+                    <td>${d.clicks}</td>
+                    <td>$${d.cost.toFixed(2)}</td>
+                  </tr>
+                `).join("")}
               </table>
             </div>
           </div>
         `;
       });
 
-      document.getElementById("content").innerHTML = html;
+      contentEl.innerHTML = html;
+      restoreExpandedIds(expandedIds);
       setFilter(activeFilter);
+      updateLastUpdatedLabel();
+
+      if (withAnimation && contentEl.children.length) {
+        requestAnimationFrame(() => {
+          contentEl.classList.remove("is-refreshing");
+        });
+      }
     }
 
-    init();
+    init(false);
+    setInterval(() => {
+      init(true);
+    }, AUTO_REFRESH_MS);
   </script>
 </body>
 </html>
